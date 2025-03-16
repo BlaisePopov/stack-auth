@@ -25,7 +25,7 @@ type Config struct {
 const (
 	DefaultBaseURL        = "https://api.stack-auth.com/api/v1"
 	DefaultRequestTimeout = 30 * time.Second
-	DefaultAccessType     = "Server"
+	DefaultAccessType     = "server"
 )
 
 type Client struct {
@@ -74,13 +74,22 @@ func (c *Client) SendRequest(method, path string, queryParams url.Values, body [
 		u.RawQuery = params.Encode()
 	}
 
-	req, err := http.NewRequest(method, u.String(), bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
+	var req *http.Request
+	if body != nil && len(body) > 0 {
+		req, err = http.NewRequest(method, u.String(), bytes.NewBuffer(body))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+	} else {
+		// Создаем запрос без тела
+		req, err = http.NewRequest(method, u.String(), nil)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Stack-Access-Type", c.config.AccessType)
 	req.Header.Set("X-Stack-Project-Id", c.config.ProjectID)
 	req.Header.Set("X-Stack-Secret-Server-Key", c.config.SecretServerKey)
